@@ -10,8 +10,26 @@ import { Button } from "@/components/ui/button"
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [isUserSignedIn, setIsUserSignedIn] = useState(false)
+  // Use any type for now to avoid TypeScript errors
+  const [userData, setUserData] = useState<any>(null)
+  
   const { isSignedIn } = useAuth()
   const { user } = useUser()
+
+  // Handle authentication state safely
+  useEffect(() => {
+    if (isSignedIn !== undefined) {
+      setIsUserSignedIn(isSignedIn)
+    }
+  }, [isSignedIn])
+  
+  // Handle user data safely
+  useEffect(() => {
+    if (user) {
+      setUserData(user)
+    }
+  }, [user])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -54,7 +72,7 @@ export default function Header() {
           </Link>
           
           <div className="flex items-center space-x-4">
-            {isSignedIn ? (
+            {isUserSignedIn ? (
               <>
                 <Link href="/dashboard">
                   <Button variant="outline" size="sm" className="flex items-center gap-2">

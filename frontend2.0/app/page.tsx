@@ -1,4 +1,3 @@
-
 "use client";
 import Header from "@/components/header"
 import Hero from "@/components/hero"
@@ -12,35 +11,24 @@ import Cta from "@/components/cta"
 import Footer from "@/components/footer"
 import RevealAnimations from "@/components/reveal-animations"
 
-
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
-
-// export default function Home() {
-//   return (
-//     <>
-//       <Header />
-//       <main id="main-content" className="flex-1 relative h-full">
-//         <Hero />
-//         <Features />
-//         <Stats />
-//         <Solutions />
-//         <Testimonials />
-//         <Security />
-//         <Faq />
-//         <Cta />
-//         <Footer />
-//       </main>
-//       <RevealAnimations />
-//     </>
-//   )
-// }
+import { useEffect, useState } from "react";
 
 export default function Home() {
+  // Use state to track authentication status
+  const [isUserSignedIn, setIsUserSignedIn] = useState(false);
   const { isSignedIn } = useAuth();
+  
+  // Move the auth check to useEffect
+  useEffect(() => {
+    if (isSignedIn !== undefined) {
+      setIsUserSignedIn(isSignedIn);
+    }
+  }, [isSignedIn]);
   
   return (
     <div className="min-h-screen">
@@ -92,14 +80,14 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.3 }}
               >
-                <Link href={isSignedIn ? "/dashboard" : "/sign-up"}>
+                <Link href={isUserSignedIn ? "/dashboard" : "/sign-up"}>
                   <Button className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-8 py-6 text-lg rounded-full shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-300">
-                    {isSignedIn ? "Go to Dashboard" : "Get Started Free"}
+                    {isUserSignedIn ? "Go to Dashboard" : "Get Started Free"}
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
                 
-                {!isSignedIn && (
+                {!isUserSignedIn && (
                   <Link href="/sign-in">
                     <Button variant="outline" className="border-blue-300 text-blue-100 hover:bg-blue-800/20 px-8 py-6 text-lg rounded-full backdrop-blur-sm">
                       Sign In
@@ -108,12 +96,10 @@ export default function Home() {
                 )}
               </motion.div>
             </div>
-            
-            {/* Add your hero image or animation here */}
           </div>
         </div>
       </section>
-      <>
+
       <Header />
       <main id="main-content" className="flex-1 relative h-full">
         <Hero />
@@ -127,9 +113,6 @@ export default function Home() {
         <Footer />
       </main>
       <RevealAnimations />
-    </>
-      {/* Add more landing page sections here */}
     </div>
   );
 }
-

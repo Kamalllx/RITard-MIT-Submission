@@ -4,6 +4,7 @@ import { useAuth } from "@clerk/nextjs";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
+import UserRegistration from "./UserRegistration";
 
 interface AuthWrapperProps {
   children: React.ReactNode;
@@ -62,5 +63,11 @@ export default function AuthWrapper({ children }: AuthWrapperProps) {
     );
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {/* Include UserRegistration component to handle database registration */}
+      {isSignedIn && <UserRegistration />}
+      {children}
+    </>
+  );
 }
