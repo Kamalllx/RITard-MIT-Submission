@@ -1,0 +1,27 @@
+{
+  "document_type": "receipt",
+  "accountId": "NA",
+  "amount": "390.00",
+  "currency": "INR",
+  "bookingDate": "2019-07-03",
+  "valueDate": "NA",
+  "operationId": "NA",
+  "entryReference": "NA",
+  "endToEndId": "NA",
+  "remittanceInformationUnstructured": "Lucky Restaurant - Crystal Family Dining",
+  "purposeCode": "NA",
+  "bankTransactionCode": "NA",
+  "proprietaryBankTransactionCode": "NA",
+  "items": [
+    {
+      "name": "Crispy Chilli Co",
+      "quantity": "1",
+      "price": "200.00"
+    },
+    {
+      "name": "Tandoori Murgh H",
+      "quantity": "1",
+      "price": "190.00"
+    }
+  ]
+}

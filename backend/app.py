@@ -16,6 +16,15 @@ from trans_bot import BankingDataAssistant
 from flask_cors import cross_origin
 from flask_socketio import SocketIO
 import os
+from receipt_scanner import process_receipt
+from twilio.twiml.messaging_response import MessagingResponse
+import traceback
+import logging
+
+# Configure logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
 
@@ -188,172 +197,120 @@ def end_finance_chat():
 
 @app.route('/whatsapp-webhook', methods=['POST'])
 def whatsapp_webhook():
-    """Handle incoming WhatsApp messages and images"""
     try:
-        # Get basic info
         sender_number = request.values.get('From', '').replace('whatsapp:', '')
         num_media = int(request.values.get('NumMedia', 0))
-
-        # Remove +91 prefix from sender number
         clean_number = sender_number.replace('+91', '')
 
-        # Create transactions folder with absolute path
-        full_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'transactions')
-        if not os.path.exists(full_path):
-            os.makedirs(full_path, mode=0o755)
-            print(f"Created transactions folder at: {full_path}")
-
-        # Check if message contains an image
         if num_media > 0:
             try:
-                # Get media URL directly
                 media_url = request.values.get('MediaUrl0')
-                print(f"Got media URL: {media_url}")
+                content_type = request.values.get('MediaContentType0', 'image/jpeg')
+                
+                logger.info(f"Processing media from {clean_number}")
+                logger.info(f"Media URL: {media_url}")
+                logger.info(f"Content type: {content_type}")
 
-                # Get Twilio credentials
-                account_sid = 'ACe255088910ba6398c9ca24a50d84f797'
-                auth_token = '784a53c0495fdd494cc800b4bd97de1d'
+                account_sid = os.getenv('TWILIO_ACCOUNT_SID')
+                auth_token = os.getenv('TWILIO_AUTH_TOKEN')
 
-                # Configure proxy for PythonAnywhere
-                proxies = None
-                if 'http_proxy' in os.environ:
-                    proxies = {
-                        'http': os.environ['http_proxy'],
-                        'https': os.environ['https_proxy']
-                    }
+                if not account_sid or not auth_token:
+                    raise ValueError("Twilio credentials not configured")
 
-                # Download the image with authentication
                 response = requests.get(
                     media_url,
                     auth=(account_sid, auth_token),
-                    proxies=proxies
+                    timeout=30
                 )
 
-                # Check if download was successful
                 if response.status_code == 200:
-                    # Create timestamp and unique ID for filename
                     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                     unique_id = str(uuid.uuid4().hex[:8])
                     filename = f"{clean_number}_{timestamp}_{unique_id}"
+
+                    upload_dir = os.path.join(os.path.dirname(__file__), 'uploads')
+                    os.makedirs(upload_dir, exist_ok=True)
+
+                    extension = 'jpg'
+                    if content_type:
+                        ext = content_type.split('/')[-1].lower()
+                        if ext in ['jpeg', 'jpg', 'png']:
+                            extension = ext
+
+                    file_path = os.path.join(upload_dir, f"{filename}.{extension}")
                     
-                    # Save image to input folder for processing
-                    input_folder = app.config['UPLOAD_FOLDER']
-                    if not os.path.exists(input_folder):
-                        os.makedirs(input_folder, mode=0o755)
-                    
-                    # Determine file extension based on content type or default to jpg
-                    content_type = response.headers.get('Content-Type', 'image/jpeg')
-                    extension = content_type.split('/')[-1] if '/' in content_type else 'jpg'
-                    if extension not in app.config['ALLOWED_EXTENSIONS']:
-                        extension = 'jpg'
-                    
-                    # Full path for saved image
-                    file_path = os.path.join(input_folder, f"{filename}.{extension}")
-                    
-                    # Save the image
                     with open(file_path, 'wb') as f:
                         f.write(response.content)
-                    print(f"Saved image to {file_path}")
                     
-                    # Process the receipt with receipt_scanner
-                    try:
-                        print(f"Processing receipt from {file_path}")
-                        result = process_receipt(file_path)
-                        
-                        # Get extracted data
-                        extracted_data = result.get('extracted_data', {})
-                        
-                        # Send to MockBank
-                        mockbank_result = send_receipt_to_mockbank(extracted_data)
-                        
-                        # Format a nice response message
-                        if mockbank_result.get('success', False):
-                            # Success message with formatted details
-                            message_parts = [
-                                "✅ Receipt processed successfully!",
-                                "",
-                                "📝 Receipt Details:",
-                            ]
-                            
-                            # Add merchant if available
-                            if "merchant" in extracted_data:
-                                message_parts.append(f"🏬 Merchant: {extracted_data['merchant']}")
-                            
-                            # Add amount if available
-                            if "amount" in extracted_data:
-                                message_parts.append(f"💰 Amount: ₹{extracted_data['amount']}")
-                            
-                            # Add date if available
-                            if "date" in extracted_data:
-                                message_parts.append(f"📅 Date: {extracted_data['date']}")
-                            
-                            # Add transaction details
-                            message_parts.extend([
-                                "",
-                                "🏦 Transaction created!",
-                                f"🔖 ID: {mockbank_result.get('transaction_id', 'Unknown')}"
-                            ])
-                            
-                            # Join all parts
-                            response_message = "\n".join(message_parts)
-                        else:
-                            # Error message
-                            response_message = "❌ Could not process receipt properly. Please try again with a clearer image."
-                            if "error" in mockbank_result:
-                                response_message += f"\n\nError: {mockbank_result['error']}"
-                    
-                    except Exception as proc_error:
-                        print(f"Receipt processing error: {proc_error}")
-                        response_message = "❌ Sorry, I couldn't process your receipt image. Please make sure it's clear and try again."
-                    
-                    # Create Twilio response
-                    twilio_response = MessagingResponse()
-                    twilio_response.message(response_message)
-                    return str(twilio_response)
-                    
-                else:
-                    # Failed to download image
-                    print(f"Failed to download image. Status code: {response.status_code}")
-                    twilio_response = MessagingResponse()
-                    twilio_response.message(f"Could not download image. Status code: {response.status_code}")
-                    return str(twilio_response)
+                    logger.info(f"Image saved successfully to {file_path}")
 
-            except Exception as img_error:
-                print(f"Image processing error: {img_error}")
+                    # Process receipt with enhanced error handling
+                    try:
+                        logger.info("Starting receipt processing...")
+                        result = process_receipt(file_path)
+                        logger.info(f"Receipt processing result: {result}")
+
+                        if result['success']:
+                            data = result['extracted_data']
+                            message = "✅ Receipt processed successfully!\n\n"
+                            message += "📝 Receipt Details:\n"
+                            if data.get('merchant'):
+                                message += f"🏪 Merchant: {data['merchant']}\n"
+                            if data.get('amount'):
+                                message += f"💰 Amount: ₹{data['amount']}\n"
+                            if data.get('date'):
+                                message += f"📅 Date: {data['date']}\n"
+                        else:
+                            logger.error(f"Receipt processing failed: {result.get('error', 'Unknown error')}")
+                            message = "❌ Sorry, I couldn't process the receipt. Please ensure:\n"
+                            message += "• The image is clear and well-lit\n"
+                            message += "• All text is readable\n"
+                            message += "• The receipt is properly aligned"
+                    except Exception as proc_error:
+                        logger.error(f"Receipt processing error: {str(proc_error)}")
+                        logger.error(traceback.format_exc())
+                        message = "❌ Error processing receipt. Please try again with a clearer image."
+                else:
+                    logger.error(f"Failed to download image. Status code: {response.status_code}")
+                    message = "❌ Failed to download the image. Please try sending it again."
+
                 twilio_response = MessagingResponse()
-                twilio_response.message("Sorry, couldn't process your image")
+                twilio_response.message(message)
                 return str(twilio_response)
 
-        # Handle text messages with existing chat logic
+            except Exception as img_error:
+                logger.error(f"Image handling error: {str(img_error)}")
+                logger.error(traceback.format_exc())
+                twilio_response = MessagingResponse()
+                twilio_response.message("Sorry, I encountered an error processing your image. Please try again.")
+                return str(twilio_response)
+
         incoming_msg = request.values.get('Body', '').strip()
         session_id = f"whatsapp_{clean_number}"
 
-        # Initialize session if it doesn't exist
         if session_id not in finance_chat_sessions:
             finance_chat_sessions[session_id] = {
                 'messages': [],
                 'user_info': {'phone': clean_number}
             }
 
-        # Process message with finance bot
         response = ChatModel(
             id=session_id,
             msg=incoming_msg,
             messages=finance_chat_sessions[session_id]['messages']
         )
 
-        # Create Twilio response
         twilio_response = MessagingResponse()
         twilio_response.message(response['res']['msg'])
         return str(twilio_response)
 
     except Exception as e:
-        print(f"Error in whatsapp_webhook: {e}")
-        traceback_details = traceback.format_exc()
-        print(f"Traceback: {traceback_details}")
+        logger.error(f"Webhook error: {str(e)}")
+        logger.error(traceback.format_exc())
         twilio_response = MessagingResponse()
-        twilio_response.message("Sorry, I encountered an error processing your request.")
+        twilio_response.message("Sorry, something went wrong. Please try again later.")
         return str(twilio_response)
+
 def extract_financial_suggestions(info):
     """Extract contextual suggestions for finance based on the conversation"""
     suggestions = []
@@ -588,3 +545,4 @@ def get_transaction_data():
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
+    

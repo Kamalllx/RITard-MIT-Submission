@@ -1,0 +1,42 @@
+{
+  "document_type": "receipt",
+  "accountId": "NA",
+  "amount": "1500.0",
+  "currency": "INR",
+  "bookingDate": "2025-03-14",
+  "valueDate": "NA",
+  "operationId": "1834",
+  "entryReference": "NA",
+  "endToEndId": "NA",
+  "remittanceInformationUnstructured": "Udeepi Garden - Food Purchase",
+  "purposeCode": "NA",
+  "bankTransactionCode": "NA",
+  "proprietaryBankTransactionCode": "NA",
+  "items": [
+    {
+      "name": "Dosa",
+      "quantity": "1",
+      "price": "40.0"
+    },
+    {
+      "name": "Idle",
+      "quantity": "1",
+      "price": "40.0"
+    },
+    {
+      "name": "Sambhar",
+      "quantity": "1",
+      "price": "40.0"
+    },
+    {
+      "name": "Chutney",
+      "quantity": "2",
+      "price": "80.0"
+    },
+    {
+      "name": "Tax",
+      "quantity": "1",
+      "price": "1300.0"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "document_type": "receipt",
+  "accountId": "NA",
+  "amount": "1500.0",
+  "currency": "Rs",
+  "bookingDate": "14/03/2025",
+  "valueDate": "NA",
+  "operationId": "1234",
+  "entryReference": "NA",
+  "endToEndId": "NA",
+  "remittanceInformationUnstructured": "Manjunath Patil - 8415781341",
+  "purposeCode": "NA",
+  "bankTransactionCode": "NA",
+  "proprietaryBankTransactionCode": "NA",
+  "items": [
+    {
+      "name": "Udupi Garden",
+      "quantity": "1",
+      "price": "1500.0"
+    }
+  ]
+}

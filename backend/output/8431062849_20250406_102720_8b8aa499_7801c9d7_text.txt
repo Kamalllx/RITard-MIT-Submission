@@ -1,0 +1,37 @@
+{
+  "document_type": "receipt",
+  "accountId": "NA",
+  "amount": 1500.0,
+  "currency": "Rs",
+  "bookingDate": "2025-03-14",
+  "valueDate": "NA",
+  "operationId": "1834",
+  "entryReference": "NA",
+  "endToEndId": "NA",
+  "remittanceInformationUnstructured": "Udupi Garden - Maujanath Patil",
+  "purposeCode": "NA",
+  "bankTransactionCode": "NA",
+  "proprietaryBankTransactionCode": "NA",
+  "items": [
+    {
+      "name": "dosa",
+      "quantity": 1,
+      "price": 40
+    },
+    {
+      "name": "idle",
+      "quantity": 1,
+      "price": 40
+    },
+    {
+      "name": "sambhar",
+      "quantity": 1,
+      "price": 40
+    },
+    {
+      "name": "chutney",
+      "quantity": 2,
+      "price": 80
+    }
+  ]
+}
